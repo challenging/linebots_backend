@@ -12,7 +12,7 @@ from google.modules.standard_search import _get_name, _get_link, _get_google_lin
 from googleapiclient.discovery import build
 
 from lib.common.utils import UTF8
-from lib.basic.bot import Bot
+from lib.common.bot import Bot
 
 def get_search_url(query, page=0, per_page=10, lang='en', cr=""):
     # note: num per page might not be supported by google anymore (because of

@@ -11,7 +11,7 @@ from google.modules.utils import get_html
 from bs4 import BeautifulSoup
 from hanziconv import HanziConv
 
-from lib.basic.bot import Bot
+from lib.common.bot import Bot
 from lib.common.utils import UTF8, crawl, data_dir
 
 class LuckyBot(Bot):
@@ -45,6 +45,8 @@ class LuckyBot(Bot):
             msg = "pisces"
         elif re.search(r"^(牡羊|白羊|aries)", msg):
             msg = "aries"
+        else:
+            msg = None
 
         return msg
 
@@ -72,7 +74,7 @@ class LuckyBot(Bot):
         else:
             self.set_dataset()
 
-    def crawl_job(self, is_gen=True):
+    def crawl_job(self):
         self.set_dataset()
 
         results = {}
@@ -81,14 +83,22 @@ class LuckyBot(Bot):
             response = requests.get(url)
             soup = BeautifulSoup(response.content, "html.parser")
 
-            title = None
+            title, value = None, None
             for p in soup.findAll("p", attrs={"style": "text-indent: 2em;"}):
-                if title is None:
-                    title = self.mapping(p.text.strip().encode(UTF8))
-                else:
-                    results[title] = HanziConv.toTraditional(p.text.strip())
+                text = p.text.strip().encode(UTF8)
+                if text == "（注：本运势为精简版运势）":
+                    continue
 
-                    title = None
+                if title is None:
+                    title = self.mapping(text)
+                else:
+                    value = HanziConv.toTraditional(text)
+
+                    if len(title) > len(value):
+                        title, value = value, title
+
+                    results[title] = value
+                    title, value = None, None
 
         filepath = os.path.join(data_dir(self.repository), self.filename)
         folder = os.path.dirname(filepath)
@@ -100,8 +110,8 @@ class LuckyBot(Bot):
         with open(filepath, "wb") as out_file:
             json.dump(results, out_file)
 
-        if is_gen:
-            self.gen_results()
+        self.gen_results()
+        self.insert_answer()
 
     def gen_results(self):
         filepath = os.path.join(data_dir(self.repository), self.filename)
@@ -110,13 +120,15 @@ class LuckyBot(Bot):
 
         print "rebuild the info of {} successfully".format(type(self).__name__)
 
-    def bots(self, msg):
-        msg = self.mapping(msg)
-        results = self.info.get(msg, None)
-
+    def bots(self, question):
         answer = None
-        if results is not None:
-            answer = "[{}]的今天星座運勢如下\n{}".format(msg, results.encode(UTF8))
+        msg = self.mapping(question)
+
+        if msg:
+            _, rc = self.ask(msg)
+
+            if rc:
+                answer = "[{}]的今天星座運勢如下\n{}".format(question, rc.encode(UTF8))
 
         return answer
 

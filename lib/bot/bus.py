@@ -1,16 +1,17 @@
-#a!/usr/bin/env python
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
 import os
 import sys
 import json
 import time
+import datetime
 import requests
 import difflib
 import threading
 
-from lib.basic.bot import Bot
-from lib.common.utils import crawl, data_dir
+from lib.common.bot import Bot
+from lib.common.utils import UTF8, crawl, data_dir
 
 class BusBot(Bot):
     repository = "bus"
@@ -75,10 +76,7 @@ class BusBot(Bot):
                         ("http://ptx.transportdata.tw/MOTC/v2/Bus/Route/City/Tainan?$top=30000&$format=JSON".format(self.ticket), "stop_tainan.json"),
                        ]
 
-    def crawl_job(self, is_gen=True):
-        self.crawling_timestamp = time.time()
-        print "set the crawling timestamp to be {}".format(self.crawling_timestamp)
-
+    def crawl_job(self):
         idx = 0
         while idx < len(self.dataset)/2:
             url, filename = self.dataset[idx]
@@ -132,7 +130,7 @@ class BusBot(Bot):
                 go_back = t["Direction"]
                 estimation_time = t.get("EstimateTime", -1)
 
-                key = "{}{}".format(route_name.encode("UTF8"), station_name.encode("UTF8"))
+                key = "{}{}".format(route_name.encode(UTF8), station_name.encode(UTF8))
 
                 direction, estimation = None, -1
                 if station_status in [1, 2, 3, 4] or plate_num == -1 or estimation_time < 0:
@@ -149,7 +147,7 @@ class BusBot(Bot):
 
                     estimation = -1
                 else:
-                    direction = "往[{}]方向".format(stop[route_id][go_back].encode("UTF8"))
+                    direction = "往[{}]方向".format(stop[route_id][go_back].encode(UTF8))
                     estimation = round(((estimation_time) / 60), 1)
 
                 self.info.setdefault(key, {})
@@ -157,25 +155,30 @@ class BusBot(Bot):
 
         print "rebuild the information of {} bus successfully".format(target)
 
+        self.insert_answer()
+
         return True
 
-    def gen_results(self, cities=["Taipei", "NewTaipei", "Kaosiung"]):
+    def gen_results(self, cities=[]):
         for city in cities:
             self.gen_sub_results(city.lower())
+
+        self.insert_answer()
 
     def bots(self, msg):
         reply_txt = None
 
-        def checking(info):
+        def checking(info, crawling_timestamp):
             r = ""
 
             for direction, estimation in info:
-                adjusted_timestamp = (time.time() - self.crawling_timestamp)/60 if hasattr(self, "crawling_timestamp") else 0
+                adjusted_timestamp = (time.time() - crawling_timestamp)/60
 
                 if estimation > 0:
                     estimation -= adjusted_timestamp
                     estimation = round(estimation, 1)
 
+                    direction = direction.encode(UTF8)
                     if estimation < 1:
                         r += "{} 進站中\n".format(direction)
                     elif estimation > 180:
@@ -185,11 +188,13 @@ class BusBot(Bot):
 
             return r
 
-        if msg in self.info:
+        crawling_datetime, answer = self.ask(msg)
+        if answer:
             reply_txt = msg + "\n"
 
-            reply_txt += checking(self.info[msg].items())
+            reply_txt += checking(answer.items(), time.mktime(crawling_datetime.timetuple()))
         else:
+            '''
             candiated, matching = [], None
             max_similarity = -sys.maxint
             ordered_similarity = {}
@@ -212,13 +217,13 @@ class BusBot(Bot):
 
                 reply_txt += checking(self.info[matching].items())
             else:
-                '''
                 reply_txt = "查無[{}]此公車資訊，不知是否您是要查詢\n".format(msg)
                 for idx, (stop_info, _) in sorted(ordered_similarity.items(), key=lambda e: e[1], reverse=True)[:3]:
                     reply_txt += "{}. [{}]\n".format(idx+1, stop_info)
-                '''
 
                 reply_txt = None
+            '''
+            reply_txt = None
 
         if reply_txt:
             reply_txt = reply_txt.strip().replace("\n\n", "\n")

@@ -10,13 +10,10 @@ def crawl():
     global sched
 
     if sched is None:
-        '''
-        fxrate.bot.crawl_job()
-        google_search.bot.crawl_job()
-        weather.bot.crawl_job()
-        lucky.bot.crawl_job()
-        bus.bot.crawl_job()
-        '''
+        fxrate.bot.init()
+        weather.bot.init()
+        lucky.bot.init()
+        bus.bot.init()
         bus.bot.hourly_job()
 
         sched = BlockingScheduler()

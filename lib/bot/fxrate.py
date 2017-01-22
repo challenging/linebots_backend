@@ -7,7 +7,7 @@ import sys
 import pandas as pd
 
 from lib.common.utils import crawl, data_dir
-from lib.basic.bot import Bot
+from lib.common.bot import Bot
 
 class RateBot(Bot):
     repository = "fxrate"
@@ -74,21 +74,23 @@ class RateBot(Bot):
 
         print "rebuild fxrate_info successfully"
 
-    def crawl_job(self, is_gen=True):
+    def crawl_job(self):
         for url, filename in self.dataset:
             crawl(url, RateBot.repository, filename)
 
-        if is_gen:
-            self.gen_results()
+        self.gen_results()
+        self.insert_answer()
 
-    def bots(self, msg):
-        msg = self.mapping(msg)
-
+    def bots(self, question):
         reply_txt = None
+        msg = self.mapping(question)
 
-        if msg and msg in self.info:
-            reply_txt = "臺灣銀行關於[{}] - 現金賣出({}),即期賣出({});現金買入({}),即期買入({})".format(\
-                msg, self.info[msg][2], self.info[msg][3], self.info[msg][0], self.info[msg][1])
+        if msg:
+            _, answer = self.ask(msg)
+
+            if answer:
+                reply_txt = "臺灣銀行關於[{}] - 現金賣出({}),即期賣出({});現金買入({}),即期買入({})".format(\
+                    question, answer[2], answer[3], answer[0], answer[1])
 
         return reply_txt
 

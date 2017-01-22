@@ -9,7 +9,7 @@ import json
 from google.modules.utils import get_html
 from bs4 import BeautifulSoup
 
-from lib.basic.bot import Bot
+from lib.common.bot import Bot
 from lib.common.utils import UTF8, crawl, data_dir
 
 class WeatherBot(Bot):
@@ -63,6 +63,8 @@ class WeatherBot(Bot):
             msg = "kinmen_county"
         elif re.search(r"^(澎湖|pen)", msg):
             msg = "penghu_county"
+        else:
+            msg = None
 
         return msg
 
@@ -90,7 +92,7 @@ class WeatherBot(Bot):
                         ("http://www.cwb.gov.tw/V7/forecast/taiwan/Kinmen_County.htm", WeatherBot.filename),
                         ("http://www.cwb.gov.tw/V7/forecast/taiwan/Penghu_County.htm", WeatherBot.filename),]
 
-    def crawl_job(self, is_gen=True):
+    def crawl_job(self):
         results = {}
 
         for url, filename in self.dataset:
@@ -126,8 +128,8 @@ class WeatherBot(Bot):
         with open(filepath, "wb") as out_file:
             json.dump(results, out_file)
 
-        if is_gen:
-            self.gen_results()
+        self.gen_results()
+        self.insert_answer()
 
     def gen_results(self):
         filepath = os.path.join(data_dir(WeatherBot.repository), WeatherBot.filename)
@@ -136,16 +138,18 @@ class WeatherBot(Bot):
 
         print "rebuild the info of WeatherBot successfully"
 
-    def bots(self, msg):
+    def bots(self, question):
         results = None
 
-        msg = self.mapping(msg)
-        if msg and msg in self.info:
-            results = "\n".join([_ for e in self.info[msg] for _ in e])
+        msg = self.mapping(question)
+        if msg:
+            _, rc = self.ask(msg)
+            if rc:
+                results = "\n".join([_ for e in rc for _ in e])
 
         answer = None
         if results:
-            answer = "[{}]的天氣狀況如下\n{}".format(msg, results.encode(UTF8))
+            answer = "[{}]的天氣狀況如下\n{}".format(question, results.encode(UTF8))
 
         return answer
 

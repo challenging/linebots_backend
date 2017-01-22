@@ -1,1 +1,1 @@
-web: python app/app.py
+clock: python app/clock.py
