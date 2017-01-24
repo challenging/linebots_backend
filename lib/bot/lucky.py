@@ -9,10 +9,11 @@ import requests
 
 from google.modules.utils import get_html
 from bs4 import BeautifulSoup
-from hanziconv import HanziConv
 
 from lib.common.bot import Bot
 from lib.common.utils import UTF8, crawl, data_dir
+
+from lib.langconv import *
 
 class LuckyBot(Bot):
     repository = "lucky"
@@ -92,12 +93,13 @@ class LuckyBot(Bot):
                 if title is None:
                     title = self.mapping(text)
                 else:
-                    value = HanziConv.toTraditional(text)
+                    value = Converter('zh-hant').convert(text.decode(UTF8)).encode(UTF8)
 
                     if len(title) > len(value):
                         title, value = value, title
 
                     results[title] = value
+
                     title, value = None, None
 
         filepath = os.path.join(data_dir(self.repository), self.filename)
