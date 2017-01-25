@@ -65,9 +65,6 @@ class Bot(object):
         else:
             print "Found empty rows"
 
-        self.info = {}
-        print "clean the self.info of {}".format(type(self).__name__)
-
         cursor.close()
 
     def set_dataset(self):
