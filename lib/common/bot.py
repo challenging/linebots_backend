@@ -62,7 +62,7 @@ class Bot(object):
 
         cursor.close()
 
-        self.info = None
+        self.info = {}
 
         print "The {} bot finish updating answers and clean the answers".format(type(self).__name__)
 
