@@ -20,7 +20,7 @@ def crawl():
 
         sched.add_job(weather.bot.crawl_job, "cron", minute="*/15")
         sched.add_job(fxrate.bot.crawl_job, "cron", minute="*")
-        sched.add_job(lucky.bot.crawl_job, "cron", hour="7,8,9")
+        sched.add_job(lucky.bot.crawl_job, "cron", hour="*")
 
         sched.add_job(bus.bot.hourly_job, "cron", hour="*/6")
         sched.add_job(bus.bot.crawl_job, "cron", second="5,35")

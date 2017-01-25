@@ -62,7 +62,9 @@ class Bot(object):
 
         cursor.close()
 
-        print "The {} bot finish updating answers".format(type(self).__name__)
+        self.info = None
+
+        print "The {} bot finish updating answers and clean the answers".format(type(self).__name__)
 
     def set_dataset(self):
         raise NotImplementedError
